@@ -1,6 +1,6 @@
 ## laserPop
 
-LaserOS POP is a simple AutoHotKey script that allows the user to record a sequence of Laser pop coordinates from the Pop module in laserOS. This makes it possible to rapidly pop balloons at a precise interval.
+LaserOS POP is a [AutoHotKey](https://www.autohotkey.com/) script that uses the [UIA automation library](https://github.com/Descolada/UIA-v2) It allows the user to interact with the UI of any application. It is more robust as a macro. The app allows you to record a sequence of Laser pop coordinates from the Pop module in laserOS. This makes it possible to rapidly pop balloons at a precise interval.
 
 The script records mouse coordinates relative to the laserOS client window. LaserOS needs to be set to a known size in order for those coordinates to be accurate. This is all handled by the script.
 
@@ -21,3 +21,5 @@ Alternativly you can press CTRL S to step to the next coordinate manually.
 laserPOP stores the coordinates and BPM values in a local text file "LaserOS_Coords.txt when it closes and retrieves this data when the program is loaded.
 
 <img width="315" height="502" alt="image" src="https://github.com/user-attachments/assets/72316686-5e82-4e54-a9f4-1d8a64efcadb" />
+
+There is also an example of a SVG burn routine which allows you to burn multiple SVG images in sequence. Each at it's own size and position. I need it for some of the more funcky laser shows I do.
