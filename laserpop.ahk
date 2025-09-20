@@ -1,4 +1,6 @@
 #Requires AutoHotkey v2
+;#include "laseros.ahk"
+#include "laserOS_UIA_v2.ahk"
 
 ; ---------------------------
 ; File to store data
@@ -16,6 +18,7 @@ myGui.Add("Text",, "Hotkeys:`r`n`tCtrl+A = Add coordinate`r`n`tCtrl+S = Next coo
 
 ; Multiline Edit control (acts like memo)
 coordMemo := myGui.AddEdit("w220 h160 +ReadOnly +Multi")
+debug := coordMemo
 
 ; BPM input
 myGui.Add("Text",, "BPM:")
@@ -41,14 +44,14 @@ myGui.Show("x50 y50 w250 h370")
 ; Main script
 ; ---------------------------
 
-exe := "ahk_exe laserOS.exe"
-exePath := "C:\Program Files\LaserOS\laserOS.exe"
+;exe := "ahk_exe laserOS.exe"
+;exePath := "C:\Program Files\LaserOS\laserOS.exe"
 
 ; global array to hold captured coordinates
 coords := []
 step := 1
-ww := 1275
-wh := 1275
+ww := -1
+wh := -1
 
 ; ---------------------------
 ; Load data if file exists
@@ -70,21 +73,10 @@ if FileExist(dataFile) {
             coords.Push({x:parts[1]+0, y:parts[2]+0})
         }
     }
-} else {
-    PI := 3.14159265359
-    count := 0 ;32
-    idx := 0
-    coords := []
-    while (idx < count){
-        angle := idx * PI * 2 / count        
-        coords.Push({x: floor(1036 + cos(angle) * 185), y: floor(218 + sin(angle) * 185)})
-        idx++
-    }
 }
 
 ShowCoords()
-
-SetLaserOS()
+StartLaserOS()
 
 ; ensure mouse uses screen coordinates for capture
 CoordMode("Mouse", "Client")
@@ -94,6 +86,8 @@ Hotkey "^a", CaptureCoord
 Hotkey "^p", PlayCoords
 Hotkey "^s", PlayStep
 Hotkey "^l", StopLoop
+Hotkey "^t", SlideShow
+HotKey "^c", GetLaser
 
 ; ---------------------------
 ; Functions
@@ -107,37 +101,147 @@ ShowCoords(*){
 }
 
 SetLaserOS(*){
-    if !WinExist(exe) {
-        Run(exePath)
-        WinWait(exe, ,10) ; wait up to 10 seconds for window to appear
-    }
-    WinActivate(exe)
-    WinWait(exe, ,10) ; wait up to 10 seconds for window to appear
-    send "p"
-    WinMove(0, 0, ww, wh)    
+    StartLaserOS()
+    WinGetPos &wx, &wy, &wwo, &who, exe
+    if (ww > -1 || wh > -1)
+        WinMove(wx, wy, ww, wh)    
 }
 
-CaptureCoord(ThisHotkey) {
-    global coords, coordMemo, exe
+SlideShow(*){
+    SetLaserOutputSize(50, 50, -100, 0,)
+    loop {
+        pg := 2000 ; Fade duration
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\gay_erotic_lineart_1_edit.svg", 6000)
+        SetLaserPosX(100)
+        sleep(pg)
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\nz_falcons.svg", 7000)
+        SetLaserPosX(-100)
+        sleep(pg)
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\gay_erotic_lineart_2_edit.svg", 8000)
+        SetLaserPosX(100)
+        sleep(pg)
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\Urge_events.svg", 8000)
+        SetLaserPosX(-100)
+        sleep(pg)
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\gay_erotic_lineart_5_edit.svg", 6000)
+        SetLaserPosX(100)
+        sleep(pg)
+
+        BurnImportImage("c:\Users\Paul\Pictures\Urge\svg\beatline.xyz_logo_single stroke.svg", 14000)
+        SetLaserPosX(-100)
+        sleep(pg)
+    } Until chkLoop.value != 1
+}
+
+SetBurn(fileName, drawTime, glowDuration := 0){
+    global exe
+    pt := 3000
+    WinActivate(exe)        ; activate laserOS
+    ;Click('L', 442, 842, 1) ; select burn
+    send "b"
+    Sleep(pt)
+    Click('L', 948, 205, 1) ; select import image
+    Sleep(pt)
+    SendText(fileName)      ; define svg file
+    Sleep(pt)
+    Send("{Enter}")         ; load the file
+    Sleep(1000)
+    SetLaser(true)
+    Click('L', 872, 382, 1) ; burn image on glow panel
+    Sleep(drawTime)
+    SetLaser(false)
+    sleep(glowDuration)
+}
+
+SetProjectorImageSettings(*){
+    global main
+    pt := 200
     WinActivate(exe)
+    setSettings(true)
+    setProjectorSetup()
+    Sleep(pt)
+    ; Open drop down
+    elProjectorSettingType := main.ElementFromPath("Y3q").Highlight() ;image dropdown
+    btnProjectorSettingType := elProjectorSettingType.InvokePattern
+    btnProjectorSettingType.Invoke()
+    Click('L', elProjectorSettingType.Location.x - main.Location.x + 15, 147, 1)
+    Sleep(pt)
+}
+
+SetLaserOutputSize(zoomx:="", zoomy:="", posx:="", posy:="", angle:=""){
+    global main
+    SetProjectorImageSettings()
+    pt := 200
+    WinActivate(exe)
+    setSettings(true)
+    setProjectorSetup()
+
+    if (zoomx != ""){
+        btnImageZoomX := main.ElementFromPath("YY/0").Highlight().InvokePattern
+        btnImageZoomX.Invoke()
+        Sleep(40)
+        SetDialogByValue(zoomx)
+    }
+    if (zoomy != ""){
+        btnImageZoomY := main.ElementFromPath("YY/0q").Highlight().InvokePattern
+        btnImageZoomY.Invoke()
+        Sleep(40)
+        SetDialogByValue(zoomy)
+    }
+    if (posx != ""){
+        btnImagePosX := main.ElementFromPath("YY/0r").Highlight().InvokePattern
+        btnImagePosX.Invoke()
+        Sleep(40)
+        SetDialogByValue(posx)
+    }
+    if (posy != ""){
+        btnImagePosY := main.ElementFromPath("YY/0t").Highlight().InvokePattern
+        btnImagePosY.Invoke()
+        Sleep(40)
+        SetDialogByValue(posy)
+    }
+    if (angle != ""){
+        btnImageRotate := main.ElementFromPath("YY/0v").Highlight().InvokePattern
+        btnImageRotate.Invoke()
+        Sleep(40)
+        SetDialogByValue(angle)
+    }    
+    setSettings(false)
+    Sleep(pt)
+}
+
+SetLaserPosX(value){
+    SetLaserOutputSize(, , value, )
+}
+
+SetLaserPosY(value){
+    SetLaserOutputSize(, , , value)
+}
+
+
+
+CaptureCoord(*) {
+    global coords, coordMemo, exe, ww, wh
+    WinActivate(exe)
+    if (ww > -1 || wh > -1)
+        WinGetPos &wx, &wy, &ww, &wh, exe
     ; get mouse position in screen coordinates
     MouseGetPos &mx, &my
-    ; get LaserOS window position
-    ;WinGetPos &wx, &wy, &ww, &wh, exe
-    ; convert to relative coordinates
-    ;relX := mx - wx
-    ;relY := my - wy
     coords.Push({x:mx, y:my})
+    color := PixelGetColor(mx, my)
     ; append to memo text
-    coordMemo.Value .= mx ", " my "`r`n"
+    coordMemo.Value .= mx ", " my ", " color "`r`n"
 }
 
 PlayCoords(*) {
     global coords, exe, bpmEdit
     if coords.Length = 0 {
-        MsgBox("No coordinates stored.")
+        MsgBox("No coordinates defined.")
         return
     }
+
+    ; activate Pop mode in laserOS (if "P" hotkey was defined by the user)
+    send "p"
 
     ; read BPM and calculate wait time in ms
     bpm := bpmEdit.Value
@@ -145,12 +249,7 @@ PlayCoords(*) {
         bpm := 120 ; fallback
     waitTime := 60000 / bpm  ; time per click in ms
 
-    WinActivate(exe)
-
-    ; get window position in case it moved
-    ;WinGetPos &wx, &wy, &ww, &wh, exe
-
-    
+    WinActivate(exe)   
     loop {
         ; start system time
         startTime := A_TickCount
@@ -185,19 +284,22 @@ ClearCoords(*) {
     global coords, coordMemo
     coords := [] ; reset array
     coordMemo.Value := "" ; clear the memo
+    ww := -1
+    wh := -1
     if FileExist(dataFile) {
         FileDelete(dataFile)
     }
 }
 
 SaveAndExit(*) {
-    global coords, bpmEdit, dataFile
+    global coords, bpmEdit, dataFile, ww, wh
     if (coords.Length > 0){
         ; open file for writing
         file := FileOpen(dataFile, "w")
         if !IsObject(file)
             return ExitApp() ; fallback if file can't be written
-        WinGetPos &wx, &wy, &ww, &wh, exe
+        if (ww = -1 || wh = -1)
+            WinGetPos &wx, &wy, &ww, &wh, exe
         ; write BPM
         file.WriteLine("BPM=" bpmEdit.Value)
         ; write Width
